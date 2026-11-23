@@ -150,9 +150,17 @@ def send(text):
         return True
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {"chat_id": CHANNEL, "text": text, "parse_mode": "HTML", "disable_web_page_preview": False}
-    for _ in range(3):
-        r = requests.post(url, data=payload, timeout=30)
-        data = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
+    for attempt in range(1, 4):
+        try:
+            r = requests.post(url, data=payload, timeout=(10, 60))
+        except requests.RequestException as e:
+            log(f"  ⚠️  Telegram ne répond pas (essai {attempt}/3) : {type(e).__name__}")
+            time.sleep(10 * attempt)
+            continue
+        try:
+            data = r.json()
+        except ValueError:
+            data = {}
         if r.ok and data.get("ok"):
             return True
         retry = data.get("parameters", {}).get("retry_after")
@@ -162,6 +170,7 @@ def send(text):
             continue
         log(f"  ❌ Échec Telegram : {data.get('description') or r.text[:200]}")
         return False
+    log("  ❌ Telegram injoignable pour cette offre, nouvel essai au prochain passage")
     return False
 
 
@@ -207,6 +216,8 @@ def main():
         if send(format_message(e)):
             seen.append(e["_id"])
             posted += 1
+            if not DRY_RUN:
+                save_seen(seen)  # on mémorise au fur et à mesure
             time.sleep(3)  # rythme doux pour Telegram
 
     if not DRY_RUN:
