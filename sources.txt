@@ -1,0 +1,18 @@
+# Sources d'offres d'emploi lues par le bot (une adresse de flux RSS par ligne).
+# Une ligne qui commence par # est ignorée.
+# Si une source ne répond pas, le bot l'ignore et continue avec les autres.
+
+# --- Sources actives ---
+# Togo et Afrique de l'Ouest (vérifiée : flux RSS valide)
+https://www.emploitogo.info/feed/
+
+# Côte d'Ivoire et Afrique de l'Ouest (à confirmer au premier test)
+https://yop.l-frii.com/feed/
+
+# --- Sources optionnelles : retirez le # pour les activer ---
+# Recherches Google Actualités (plus larges, mais peuvent contenir des articles qui ne sont pas des offres)
+# https://news.google.com/rss/search?q=intitle:recrute+Togo&hl=fr&gl=TG&ceid=TG:fr
+# https://news.google.com/rss/search?q=intitle:recrute+B%C3%A9nin&hl=fr&gl=BJ&ceid=BJ:fr
+# https://news.google.com/rss/search?q=intitle:recrute+S%C3%A9n%C3%A9gal&hl=fr&gl=SN&ceid=SN:fr
+# https://news.google.com/rss/search?q=intitle:recruiting+Nigeria&hl=en-NG&gl=NG&ceid=NG:en
+# https://news.google.com/rss/search?q=intitle:vacancy+Ghana&hl=en-GH&gl=GH&ceid=GH:en
