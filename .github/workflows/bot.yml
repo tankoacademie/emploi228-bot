@@ -1,0 +1,45 @@
+name: Bot Emploi228
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # toutes les 15 minutes
+  workflow_dispatch:          # bouton "Run workflow" pour lancer à la main
+    inputs:
+      dry_run:
+        description: "Mode test (1 = affiche sans publier, 0 = publie)"
+        default: "0"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: emploi228
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer les outils
+        run: pip install feedparser requests
+
+      - name: Chercher et publier les offres
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: "@Emploi228"
+          DRY_RUN: ${{ github.event.inputs.dry_run || '0' }}
+        run: python bot.py
+
+      - name: Mémoriser les offres déjà publiées
+        run: |
+          git config user.name "emploi228-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add seen.json || true
+          git diff --cached --quiet || (git commit -m "Mise à jour des offres publiées" && git push)
