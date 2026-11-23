@@ -149,13 +149,13 @@ def send(text):
         log("----- (TEST, non publié) -----\n" + text)
         return True
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {"chat_id": CHANNEL, "text": text, "parse_mode": "HTML", "disable_web_page_preview": False}
-    for attempt in range(1, 4):
+    payload = {"chat_id": CHANNEL, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True}
+    for attempt in range(1, 3):
         try:
-            r = requests.post(url, data=payload, timeout=(10, 60))
+            r = requests.post(url, data=payload, timeout=(10, 25))
         except requests.RequestException as e:
-            log(f"  ⚠️  Telegram ne répond pas (essai {attempt}/3) : {type(e).__name__}")
-            time.sleep(10 * attempt)
+            log(f"  ⚠️  Telegram ne répond pas (essai {attempt}/2) : {type(e).__name__}")
+            time.sleep(5)
             continue
         try:
             data = r.json()
@@ -174,10 +174,36 @@ def send(text):
     return False
 
 
+def check_telegram():
+    """Vérifie que le token et le canal fonctionnent, avec un message clair sinon."""
+    base = f"https://api.telegram.org/bot{TOKEN}"
+    try:
+        me = requests.get(f"{base}/getMe", timeout=(10, 20)).json()
+    except requests.RequestException as e:
+        log(f"❌ Impossible de joindre Telegram : {type(e).__name__}")
+        sys.exit(1)
+    if not me.get("ok"):
+        log(f"❌ Token refusé par Telegram ({me.get('description')}). Recopiez le token de BotFather dans le secret.")
+        sys.exit(1)
+    log(f"🤖 Bot connecté : @{me['result']['username']}")
+    try:
+        chat = requests.get(f"{base}/getChat", params={"chat_id": CHANNEL}, timeout=(10, 20)).json()
+    except requests.RequestException as e:
+        log(f"❌ Telegram ne répond pas pour le canal : {type(e).__name__}")
+        sys.exit(1)
+    if not chat.get("ok"):
+        log(f"❌ Canal {CHANNEL} inaccessible ({chat.get('description')}). Ajoutez le bot comme administrateur du canal.")
+        sys.exit(1)
+    log(f"📢 Canal trouvé : {chat['result'].get('title')}")
+
+
 def main():
     if not TOKEN and not DRY_RUN:
         log("❌ Le secret TELEGRAM_BOT_TOKEN est manquant. Voir le guide, étape 3.")
         sys.exit(1)
+
+    if not DRY_RUN:
+        check_telegram()
 
     seen = load_seen()
     seen_set = set(seen)
@@ -212,7 +238,11 @@ def main():
             seen.append(e["_id"])  # trop d'offres d'un coup : on garde les plus récentes
 
     posted = 0
+    start = time.time()
     for e in to_post:
+        if time.time() - start > 360:
+            log("⏱️  Temps limite atteint, la suite au prochain passage")
+            break
         if send(format_message(e)):
             seen.append(e["_id"])
             posted += 1
